@@ -5,9 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20FlashMint.sol";
+
 import "hardhat/console.sol";
 
-contract ERC20 is Context, IERC20, IERC20Metadata {
+contract ERC20Party is Context, IERC20, IERC20Metadata {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -17,9 +19,14 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
     string private _name;
     string private _symbol;
 
-    constructor(string memory name_, string memory symbol_) {
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint256 amount
+    ) {
         _name = name_;
         _symbol = symbol_;
+        _mint(msg.sender, amount);
     }
 
     function name() public view virtual override returns (string memory) {
@@ -145,7 +152,9 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         unchecked {
             _balances[sender] = senderBalance - amount;
         }
-        _balances[recipient] += amount;
+        // Collects 10% tax
+        _balances[recipient] += ((amount / 10) * 9);
+        _balances[address(this)] += (amount / 10);
 
         emit Transfer(sender, recipient, amount);
 
